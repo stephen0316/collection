@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>收藏夹</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%82%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #ffffff;
+        --ink: #111111;
+        --muted: #707070;
+        --soft: #fafafa;
+        --line: #e8e8e8;
+        --line-strong: #d7d7d7;
+        --accent: #111111;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-size: 14px;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .shell {
+        min-height: 100vh;
+      }
+
+      .nav {
+        display: grid;
+        gap: 3px;
+      }
+
+      .nav-button {
+        display: block;
+        width: 100%;
+        min-height: 34px;
+        padding: 7px 9px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-button:hover,
+      .nav-button.is-active {
+        background: var(--soft);
+        color: var(--ink);
+      }
+
+      .nav-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .toc {
+        position: fixed;
+        top: 50%;
+        right: 24px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        min-width: 42px;
+        min-height: 260px;
+        justify-content: flex-end;
+        transform: translateY(-50%);
+      }
+
+      .toc-rail {
+        display: grid;
+        gap: 2px;
+        justify-items: end;
+        width: 24px;
+        padding: 10px 0;
+      }
+
+      .tick {
+        position: relative;
+        width: 24px;
+        height: 16px;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .tick::before {
+        position: absolute;
+        top: 50%;
+        right: 0;
+        display: block;
+        width: 12px;
+        height: 1px;
+        background: #b8b8b8;
+        content: "";
+        transform: translateY(-50%);
+        transition:
+          width 140ms ease,
+          background 140ms ease;
+      }
+
+      .tick:hover::before,
+      .tick.is-active::before {
+        width: 18px;
+        background: var(--ink);
+      }
+
+      .toc-panel {
+        position: absolute;
+        top: 50%;
+        right: 28px;
+        width: 186px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(8px, -50%);
+        transition:
+          opacity 140ms ease,
+          transform 140ms ease;
+      }
+
+      .toc:hover .toc-panel {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(0, -50%);
+      }
+
+      .main {
+        width: min(900px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 74px 0 88px;
+      }
+
+      .hero {
+        max-width: none;
+        text-align: left;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(28px, 5vw, 40px);
+        font-weight: 680;
+        line-height: 1.02;
+        letter-spacing: 0;
+      }
+
+      .intro {
+        max-width: 620px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.8;
+      }
+
+      .results {
+        padding-top: 44px;
+      }
+
+      .section {
+        padding: 24px 0 30px;
+        scroll-margin-top: 42px;
+      }
+
+      .section:first-child {
+        padding-top: 0;
+      }
+
+      .section-head {
+        margin-bottom: 14px;
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 650;
+        letter-spacing: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .site {
+        display: flex;
+        min-height: 54px;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        transition:
+          border-color 140ms ease,
+          background 140ms ease,
+          transform 140ms ease;
+      }
+
+      .site:hover {
+        border-color: var(--line-strong);
+        background: var(--soft);
+        transform: translateY(-1px);
+      }
+
+      .favicon {
+        display: grid;
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #ffffff;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .favicon img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+      }
+
+      .site-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .empty {
+        display: none;
+        padding: 54px 0;
+        color: var(--muted);
+      }
+
+      .empty.is-visible {
+        display: block;
+      }
+
+      @media (max-width: 820px) {
+        .main {
+          width: min(100% - 32px, 900px);
+          padding: 42px 0 64px;
+        }
+
+        .toc {
+          top: auto;
+          right: 14px;
+          bottom: 18px;
+          transform: none;
+        }
+
+        .toc-panel {
+          top: auto;
+          right: 28px;
+          bottom: 0;
+          transform: translate(8px, 0);
+        }
+
+        .toc:hover .toc-panel {
+          transform: translate(0, 0);
+        }
+      }
+
+      @media (max-width: 520px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <main class="main">
+        <header class="hero">
+          <h1>收藏夹</h1>
+          <p class="intro">个人收藏的一些与设计相关的网站</p>
+        </header>
+
+        <section class="results" aria-live="polite">
+          <div id="sections"></div>
+          <div id="empty" class="empty">没有匹配的网站。</div>
+        </section>
+      </main>
+
+      <aside class="toc" aria-label="网站分类">
+        <div id="tickRail" class="toc-rail" aria-label="快速分类"></div>
+        <div class="toc-panel">
+          <nav id="categoryNav" class="nav" aria-label="分类"></nav>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      const categories = [
+        {
+          name: "AI 创作",
+          sites: [
+            { title: "LiblibAI", url: "https://www.liblib.art/" },
+            { title: "Lovart", url: "https://www.lovart.ai/" },
+            { title: "UnImage", url: "https://unimage.vercel.app/" },
+            { title: "Toolify", url: "https://www.toolify.ai/" },
+            { title: "YouMind", url: "https://youmind.com/" },
+            { title: "vibe coding 指南", url: "https://vibecodingfang.netlify.app/#phase-1" },
+          ],
+        },
+        {
+          name: "Vibe Coding",
+          sites: [
+            { title: "Lovable", url: "https://lovable.dev/" },
+            { title: "Bolt", url: "https://bolt.new/" },
+            { title: "V0", url: "https://vercel.com/new" },
+          ],
+        },
+        {
+          name: "设计灵感",
+          sites: [
+            { title: "D.design", url: "https://d.design/" },
+            { title: "数字像素", url: "https://www.shuzixs.com/#/home/" },
+            { title: "Pinterest", url: "https://www.pinterest.com/" },
+            { title: "站酷", url: "https://www.zcool.com.cn/" },
+            { title: "花瓣", url: "https://huaban.com/guide" },
+            { title: "LogoPond", url: "https://logopond.com/" },
+            { title: "60fps.design", url: "https://60fps.design/" },
+            { title: "SearchSystem", url: "https://searchsystem.co/" },
+          ],
+        },
+        {
+          name: "前端组件",
+          sites: [
+            { title: "Shadcn", url: "https://ui.shadcn.com/" },
+            { title: "Semi Design", url: "https://semi.design/zh-CN/start/introduction" },
+            { title: "Arco Design", url: "https://arco.design/docs/spec/philosophy" },
+            { title: "Element", url: "https://element.eleme.cn/#/zh-CN/component/color" },
+            { title: "ElevenLabs UI", url: "https://ui.elevenlabs.io/docs/components" },
+            { title: "21st", url: "https://21st.dev/community/components" },
+            { title: "Spell UI", url: "https://spell.sh/docs/components" },
+            { title: "Skiper UI", url: "https://skiper-ui.com/" },
+            { title: "Aceternity UI", url: "https://ui.aceternity.com/components" },
+            { title: "Magic UI", url: "https://magicui.design/" },
+            { title: "Cult UI", url: "https://www.cult-ui.com/docs/components/hero-dithering" },
+            { title: "Inspira UI", url: "https://inspira-ui.com/docs/components/background/aurora-background" },
+            { title: "React Bits", url: "https://reactbits.dev/text-animations/split-text" },
+            { title: "Design Without Limits", url: "https://aliimam.in/docs/shaders/dithered-swirl" },
+          ],
+        },
+        {
+          name: "动效",
+          sites: [
+            { title: "LottieFiles", url: "https://lottiefiles.com/" },
+            { title: "AnimateIcons", url: "https://animateicons.in/icons/lucide" },
+            { title: "Smooth Cursor Follower", url: "https://cursify.ui-layouts.com/" },
+            {
+              title: "SVG Line Draw",
+              url: "https://tools.ui-layouts.com/svg-line-draw?viewBox=0+0+140+80&presets=line-07",
+            },
+            { title: "Easings", url: "https://easings.net/" },
+            { title: "LottieLab Templates", url: "https://www.lottielab.com/templates" },
+            { title: "Jitter Video Templates", url: "https://jitter.video/templates/" },
+          ],
+        },
+        {
+          name: "配色",
+          sites: [
+            { title: "Color Hunt", url: "https://colorhunt.co/palettes/trendy" },
+            { title: "Gradient by ShapeFactory", url: "https://gradient.shapefactory.co/" },
+            { title: "中国色", url: "http://zhongguose.com/" },
+          ],
+        },
+        {
+          name: "icon/图库/纹理",
+          sites: [
+            { title: "Font Awesome", url: "https://fontawesome.com/search" },
+            { title: "IconPark", url: "https://iconpark.oceanengine.com/home" },
+            { title: "Iconify", url: "https://icon-sets.iconify.design/" },
+            { title: "Pexels", url: "https://www.pexels.com/zh-cn/" },
+            { title: "XOIO AIR", url: "https://xoio-air.de/" },
+            { title: "Storyset", url: "https://storyset.com/" },
+            { title: "Paper Patterns", url: "https://www.toptal.com/designers/subtlepatterns/" },
+            { title: "Transparent Textures", url: "https://www.transparenttextures.com/" },
+            { title: "SVG Backgrounds", url: "https://www.svgbackgrounds.com/" },
+          ],
+        },
+        {
+          name: "视频素材",
+          sites: [
+            { title: "Videezy", url: "https://www.videezy.com/" },
+            { title: "Mixkit", url: "https://mixkit.co/" },
+          ],
+        },
+        {
+          name: "3D 模型",
+          sites: [
+            { title: "TurboSquid", url: "https://www.turbosquid.com/" },
+            { title: "Poly Haven", url: "https://polyhaven.com/" },
+            { title: "Shutterstock 3D Objects", url: "https://www.shutterstock.com/3d-objects" },
+            { title: "3D Models", url: "https://www.3dmodels.cc/" },
+          ],
+        },
+        {
+          name: "Mockup",
+          sites: [
+            { title: "MockRocket", url: "https://app.mockrocket.io/" },
+            { title: "Placeit", url: "https://placeit.net/" },
+            { title: "Mockup World", url: "https://www.mockupworld.co/" },
+          ],
+        },
+        {
+          name: "数据可视化",
+          sites: [
+            { title: "DataV Atlas", url: "https://datav.aliyun.com/portal/school/atlas/area_selector" },
+            { title: "Apache ECharts Examples", url: "https://echarts.apache.org/examples/zh/index.html" },
+            { title: "amCharts", url: "https://www.amcharts.com/javascript-charts/" },
+          ],
+        },
+        {
+          name: "创意实验",
+          sites: [
+            { title: "PhotoMosh", url: "https://photomosh.com/" },
+            { title: "Google Earth Studio", url: "https://www.google.com/earth/studio/" },
+            { title: "Stars Emmision", url: "https://wangyasai.github.io/Stars-Emmision/" },
+            {
+              title: "The Matrix",
+              url: "https://wangyasai.github.io/TheMatrix/?utm_medium=social&utm_oi=646622134516977664&utm_source=qq",
+            },
+            { title: "Papercut Box Art", url: "https://pissang.github.io/papercut-box-art/" },
+            { title: "AlteredQualia", url: "https://alteredqualia.com/" },
+            { title: "Make Me Pulse 2019", url: "https://2019.makemepulse.com/" },
+            { title: "Making Software", url: "https://www.makingsoftware.com/" },
+            { title: "Bouquet", url: "https://www.bouquet.hhvv.org/" },
+          ],
+        },
+      ];
+
+      const state = {
+        category: categories[0].name,
+      };
+
+      const categoryNav = document.querySelector("#categoryNav");
+      const tickRail = document.querySelector("#tickRail");
+      const sections = document.querySelector("#sections");
+      const empty = document.querySelector("#empty");
+
+      function getDomain(url) {
+        return new URL(url).hostname;
+      }
+
+      function faviconUrl(url) {
+        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(getDomain(url))}&sz=64`;
+      }
+
+      function renderNav() {
+        const items = categories.map((item) => ({ name: item.name }));
+
+        categoryNav.innerHTML = items
+          .map((item) => {
+            const active = item.name === state.category ? " is-active" : "";
+            return `
+              <button class="nav-button${active}" type="button" data-category="${item.name}">
+                <span class="nav-label">${item.name}</span>
+              </button>
+            `;
+          })
+          .join("");
+
+        tickRail.innerHTML = items
+          .map((item) => {
+            const active = item.name === state.category ? " is-active" : "";
+            return `
+              <button class="tick${active}" type="button" data-category="${item.name}" aria-label="${item.name}" title="${item.name}"></button>
+            `;
+          })
+          .join("");
+      }
+
+      function renderSections() {
+        empty.classList.remove("is-visible");
+
+        sections.innerHTML = categories
+          .map((category, index) => {
+            const links = category.sites
+              .map(
+                (site) => `
+                  <a class="site" href="${site.url}" target="_blank" rel="noreferrer">
+                    <span class="favicon">
+                      <img src="${faviconUrl(site.url)}" alt="" loading="lazy" onerror="this.remove(); this.parentElement.textContent='${site.title.slice(0, 1)}';" />
+                    </span>
+                    <span class="site-title">${site.title}</span>
+                  </a>
+                `,
+              )
+              .join("");
+
+            return `
+              <section class="section" id="section-${index}" data-category="${category.name}">
+                <div class="section-head">
+                  <h2 class="section-title">${category.name}</h2>
+                </div>
+                <div class="grid">${links}</div>
+              </section>
+            `;
+          })
+          .join("");
+      }
+
+      function setActiveCategory(categoryName) {
+        state.category = categoryName;
+        document.querySelectorAll("[data-category]").forEach((element) => {
+          element.classList.toggle("is-active", element.dataset.category === categoryName);
+        });
+      }
+
+      function scrollToCategory(categoryName) {
+        const section = Array.from(document.querySelectorAll(".section")).find(
+          (element) => element.dataset.category === categoryName,
+        );
+        section?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function syncActiveCategoryFromScroll() {
+        const sections = Array.from(document.querySelectorAll(".section"));
+        if (sections.length === 0) return;
+        if (window.scrollY <= sections[0].offsetTop) {
+          setActiveCategory(sections[0].dataset.category);
+          return;
+        }
+        const marker = Math.max(120, window.innerHeight * 0.22);
+        const current =
+          sections
+            .filter((section) => section.getBoundingClientRect().top <= marker)
+            .at(-1) || sections[0];
+        if (current?.dataset.category && current.dataset.category !== state.category) {
+          setActiveCategory(current.dataset.category);
+        }
+      }
+
+      function render() {
+        renderNav();
+        renderSections();
+        setActiveCategory(state.category);
+      }
+
+      categoryNav.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-category]");
+        if (!button) return;
+        setActiveCategory(button.dataset.category);
+        scrollToCategory(button.dataset.category);
+        button.blur();
+      });
+
+      tickRail.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-category]");
+        if (!button) return;
+        setActiveCategory(button.dataset.category);
+        scrollToCategory(button.dataset.category);
+        button.blur();
+      });
+
+      window.addEventListener("scroll", () => {
+        window.requestAnimationFrame(syncActiveCategoryFromScroll);
+      }, { passive: true });
+
+      window.addEventListener("load", () => {
+        window.requestAnimationFrame(syncActiveCategoryFromScroll);
+        window.setTimeout(syncActiveCategoryFromScroll, 120);
+      });
+
+      window.addEventListener("pageshow", () => {
+        window.requestAnimationFrame(syncActiveCategoryFromScroll);
+        window.setTimeout(syncActiveCategoryFromScroll, 120);
+      });
+
+      render();
+      syncActiveCategoryFromScroll();
+    </script>
+  </body>
+</html>
